@@ -3,7 +3,6 @@ from torch import nn
 
 import torch
 
-from model.EncoderALLFlower import encoderALL
 # from model.EncoderALL import encoderALL
 from model.UformerY import BasicUformerLayer, InputProj
 
@@ -38,14 +37,14 @@ class upsample(nn.Module):
             out = self.deconv(x)  # B  C H W
         return out
 
-class DecoderFlower(nn.Module):
+class DecoderFrame(nn.Module):
     def __init__(self,  img_size=256, dd_in=1,
                  embed_dim=16, depths=[2, 2, 2, 2, 2, 2, 2, 2, 2], num_heads=[1, 2, 4, 8, 16, 16, 8, 4, 2],
                  win_size=8, mlp_ratio=4., qkv_bias=True, qk_scale=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1,norm_layer=nn.LayerNorm, patch_norm=True,
                  use_checkpoint=False, token_projection='linear', token_mlp='leff',
                  shift_flag=False, modulator=False,cross_modulator=False, **kwargs):
-        super(DecoderFlower, self).__init__()
+        super(DecoderFrame, self).__init__()
         self.num_enc_layers = len(depths) // 2
         self.num_dec_layers = len(depths) // 2
         self.embed_dim = embed_dim
@@ -62,10 +61,10 @@ class DecoderFlower(nn.Module):
         conv_dpr = [drop_path_rate] * depths[4]
         dec_dpr = enc_dpr[::-1]
         # Bottleneck
+        self.upsample_f = upsample(embed_dim * 32, embed_dim * 16)
 
-
-        self.decoderlayer_f = BasicUformerLayer(dim=embed_dim * 16,
-                                                output_dim=embed_dim * 16,
+        self.decoderlayer_f = BasicUformerLayer(dim=embed_dim * 16*2,
+                                                output_dim=embed_dim * 16*2,
                                                 input_resolution=(img_size // (2 ** 3),
                                                                   img_size // (2 ** 3)),
                                                 depth=depths[5],
@@ -82,7 +81,7 @@ class DecoderFlower(nn.Module):
                                                 modulator=modulator, cross_modulator=cross_modulator)
 
 
-        self.upsample_0 = upsample(embed_dim * 16, embed_dim * 8)
+        self.upsample_0 = upsample(embed_dim * 32, embed_dim * 8)
 
         self.decoderlayer_0 = BasicUformerLayer(dim=embed_dim * 16,
                                                 output_dim=embed_dim * 16,
@@ -156,90 +155,16 @@ class DecoderFlower(nn.Module):
         self.output_proj = OutputProj(in_channel= embed_dim, out_channel=dd_in, kernel_size=3, stride=1)
 
 
-        # 以下是y的信息
-
-        self.upsample_01 = upsample(embed_dim * 16, embed_dim * 8)
-
-        self.decoderlayer_01 = BasicUformerLayer(dim=embed_dim * 16,
-                                                output_dim=embed_dim * 16,
-                                                input_resolution=(img_size // (2 ** 3),
-                                                                  img_size // (2 ** 3)),
-                                                depth=depths[5],
-                                                num_heads=num_heads[5],
-                                                win_size=win_size,
-                                                mlp_ratio=self.mlp_ratio,
-                                                qkv_bias=qkv_bias, qk_scale=qk_scale,
-                                                drop=drop_rate, attn_drop=attn_drop_rate,
-                                                drop_path=dec_dpr[:depths[5]],
-                                                norm_layer=norm_layer,
-                                                use_checkpoint=use_checkpoint,
-                                                token_projection=token_projection, token_mlp=token_mlp,
-                                                shift_flag=shift_flag,
-                                                modulator=modulator, cross_modulator=cross_modulator)
-        self.upsample_11 = upsample(embed_dim * 16, embed_dim * 4)
-        self.decoderlayer_11 = BasicUformerLayer(dim=embed_dim * 8,
-                                                output_dim=embed_dim * 8,
-                                                input_resolution=(img_size // (2 ** 2),
-                                                                  img_size // (2 ** 2)),
-                                                depth=depths[6],
-                                                num_heads=num_heads[6],
-                                                win_size=win_size,
-                                                mlp_ratio=self.mlp_ratio,
-                                                qkv_bias=qkv_bias, qk_scale=qk_scale,
-                                                drop=drop_rate, attn_drop=attn_drop_rate,
-                                                drop_path=dec_dpr[sum(depths[5:6]):sum(depths[5:7])],
-                                                norm_layer=norm_layer,
-                                                use_checkpoint=use_checkpoint,
-                                                token_projection=token_projection, token_mlp=token_mlp,
-                                                shift_flag=shift_flag,
-                                                modulator=modulator, cross_modulator=cross_modulator)
-        self.upsample_21 = upsample(embed_dim * 8, embed_dim * 2)
-        self.decoderlayer_21 = BasicUformerLayer(dim=embed_dim * 4,
-                                                output_dim=embed_dim * 4,
-                                                input_resolution=(img_size // 2,
-                                                                  img_size // 2),
-                                                depth=depths[7],
-                                                num_heads=num_heads[7],
-                                                win_size=win_size,
-                                                mlp_ratio=self.mlp_ratio,
-                                                qkv_bias=qkv_bias, qk_scale=qk_scale,
-                                                drop=drop_rate, attn_drop=attn_drop_rate,
-                                                drop_path=dec_dpr[sum(depths[5:7]):sum(depths[5:8])],
-                                                norm_layer=norm_layer,
-                                                use_checkpoint=use_checkpoint,
-                                                token_projection=token_projection, token_mlp=token_mlp,
-                                                shift_flag=shift_flag,
-                                                modulator=modulator, cross_modulator=cross_modulator)
-        self.upsample_31 = upsample(embed_dim * 4, embed_dim)
-        self.decoderlayer_31 = BasicUformerLayer(dim=embed_dim,
-                                                output_dim=embed_dim * 2,
-                                                input_resolution=(img_size,
-                                                                  img_size),
-                                                depth=depths[8],
-                                                num_heads=num_heads[8],
-                                                win_size=win_size,
-                                                mlp_ratio=self.mlp_ratio,
-                                                qkv_bias=qkv_bias, qk_scale=qk_scale,
-                                                drop=drop_rate, attn_drop=attn_drop_rate,
-                                                drop_path=dec_dpr[sum(depths[5:8]):sum(depths[5:9])],
-                                                norm_layer=norm_layer,
-                                                use_checkpoint=use_checkpoint,
-                                                token_projection=token_projection, token_mlp=token_mlp,
-                                                shift_flag=shift_flag,
-                                                modulator=modulator, cross_modulator=cross_modulator)
-
-        self.sig11 = nn.Sigmoid()
-        self.output_proj1 = OutputProj(in_channel=embed_dim, out_channel=dd_in, kernel_size=3, stride=1)
-
-
     # feature is list[32 *128*128 64*64*64 128*32*32 256*16*16     ]
     def forward(self, feature,mask=None):
-        for ii in range(4):
+        for ii in range(5):
             feature[ii] = feature[ii].flatten(2).transpose(1, 2).contiguous() # B H*W C
 
 
+        up_f = self.upsample_f((feature[4]))
 
-        deconv_f = self.decoderlayer_f(feature[3], mask=mask)
+        deconv_f = torch.cat([up_f, feature[3]], -1)
+        deconv_f = self.decoderlayer_f(deconv_f, mask=mask)
 
 
         # Decoder1
@@ -261,34 +186,7 @@ class DecoderFlower(nn.Module):
 
         y1 = self.output_proj(deconv3)
         y1 = self.sig1(y1)
-
-
-        # Decoder2
-        up01 = self.upsample_01(deconv_f)
-        deconv01 = torch.cat([up01, feature[2]], -1)
-        deconv01 = self.decoderlayer_01(deconv01, mask=mask)
-
-        up11 = self.upsample_11(deconv01)
-        deconv11 = torch.cat([up11, feature[1]], -1)
-        deconv11 = self.decoderlayer_11(deconv11, mask=mask)
-
-        up21 = self.upsample_21(deconv11)
-        deconv21 = torch.cat([up21, feature[0]], -1)
-        deconv21 = self.decoderlayer_2(deconv21, mask=mask)
-
-        up31 = self.upsample_31(deconv21)
-
-        deconv31 = self.decoderlayer_31(up31, mask=mask)
-
-        y11 = self.output_proj1(deconv31)
-        y11 = self.sig11(y11)
-
-
-
-
-
-
-        return y1,y11
+        return y1
 
 # Output Projection
 class OutputProj(nn.Module):
@@ -328,24 +226,23 @@ class OutputProj(nn.Module):
 
 
 # if __name__ == '__main__':
-#     import os
+#     import  os
 #     os.environ['CUDA_VISIBLE_DEVICES'] = '5'
-#     h = 256
-#     w = 256
-#     x = torch.randn(1,2,h,w,4).cuda()
-#     img1 = torch.randn(1,3,h,w).cuda()
-#
-#     nb_of_time_bin = 2
+#     x = torch.randn(1,2,256,256,30).cuda()
+#     img1 = torch.randn(1,1,256,256).cuda()
+#     img2 = torch.randn(1,1, 256, 256).cuda()
+#     nb_of_time_bin = 15
 #     netParams = {'Ts': 1, 'tSample': nb_of_time_bin * 2}
-#     model = encoderALL(netParams,imageSize=h,channel=3).cuda()
-#
-#     de = DecoderFlower().cuda()
-#
-#
+#     model = encoderALL(netParams).cuda()
+#     torch.save(model.state_dict(), 's.pth')
+#     de = DecoderFrame().cuda()
 #
 #     import time
 #     start = time.time()
-#     y  =   model(x,x,img1,torch.as_tensor(2).cuda().resize(1,),torch.as_tensor(2).resize(1,).cuda())
+#     y  = model(x,x,img1,img2,torch.as_tensor(15).cuda().resize(1,),torch.as_tensor(15).resize(1,).cuda())
 #     de(y)
-
-
+#
+#     torch.save(de.state_dict(), 'de.pth')
+#
+#     end = time.time()
+#     print(end-start)
