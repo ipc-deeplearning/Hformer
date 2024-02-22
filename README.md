@@ -31,4 +31,4 @@ The simulation data set needs to unzip the shapes folder and run diffvGer.m
 Real time dataset obtained by contacting the author for scientific research.
 
 # Test
-First, run the TestHormer. py file and download the weight Hormer. pth. Finally, run val D. m to evaluate the ssim metric. Need to adjust the folder yourself.
+First, run the TestHormer. py file and download the weight Hormer. pth.（ https://pan.baidu.com/s/13Jnbz4ZuSVHQq8G1G-vy5g?pwd=5tbz password: 5tbz） Finally, run val D. m to evaluate the ssim metric. Need to adjust the folder yourself.
