@@ -2,17 +2,18 @@
 Please refer to the GitHub website for v2e:https://github.com/SensorsINI/v2e?tab=readme-ov-file
 
 # Requirements
-Python 3 with the following packages installed:
-torch==1.9.0
-torchvision==0.10.0
-tqdm==4.62.3
-numpy==1.21.2
-imageio==2.9.0
-Pillow==8.3.1
-slayerPytorch
-See https://github.com/bamsumit/slayerPytorch to install the slayerPytorch for the SNN simulation.
-cuda
-A CUDA enabled GPU is required for training any model. We test our code with CUDA 11.1 V11.1.105 on NVIDIA 3090 GPUs.
+Python 3 with the following packages installed:</br>
+torch==1.9.0</br>
+torchvision==0.10.0</br>
+tqdm==4.62.3</br>
+numpy==1.21.2</br>
+imageio==2.9.0</br>
+Pillow==8.3.1</br>
+slayerPytorch</br>
+See https://github.com/bamsumit/slayerPytorch to install the slayerPytorch for the SNN simulation.</br>
+
+cuda</br>
+A CUDA enabled GPU is required for training any model. We test our code with CUDA 11.1 V11.1.105 on NVIDIA 3090 GPUs.</br>
 
 # Important reference
 We have referred to the following articles earlier in this work. We are very grateful to the following authors for their contributions.
